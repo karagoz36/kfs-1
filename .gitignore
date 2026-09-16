@@ -1,0 +1,5 @@
+# Derleme ciktilari (object'ler, gecici isodir)
+build/
+
+# Not: kfs.iso repoya dahildir - konu "basic virtual image" teslimini istiyor.
+.DS_Store
