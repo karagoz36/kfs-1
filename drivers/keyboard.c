@@ -25,7 +25,7 @@
 #define SC_RSHIFT       0x36
 #define SC_CTRL         0x1D
 #define SC_ALT          0x38
-#define SC_F1           0x3B  /* F1..F4 -> 0x3B, 0x3C, 0x3D, 0x3E */
+#define SC_DIGIT1       0x02  /* 1..4 -> 0x02, 0x03, 0x04, 0x05 */
 
 /* Modifier tuslarin anlik durumu */
 static bool_t g_shift = FALSE;
@@ -71,19 +71,20 @@ static bool_t handle_modifier(uint8_t code, bool_t pressed)
 }
 
 /*
-** Ekran degistirme kisayolu (bonus): Alt + F1..F4 ya da Ctrl + F1..F4.
-** Islenirse TRUE doner.
+** Ekran degistirme kisayolu (bonus): Alt + 1..4 (Ctrl + 1..4 de olur).
+** Rakam tuslari secildi cunku F1..F4 host isletim sistemi tarafindan
+** (ornegin macOS'ta parlaklik/Mission Control) yakalanabiliyor.
+** Islenirse TRUE doner, boylece o tus ekrana karakter olarak basilmaz.
 */
 static bool_t handle_shortcut(uint8_t code)
 {
-	size_t index;
-
-	if (code < SC_F1 || code > SC_F1 + CONSOLE_COUNT - 1)
-		return (FALSE);
+	/* Modifier basili degilse bu normal bir tustur */
 	if (!g_alt && !g_ctrl)
 		return (FALSE);
-	index = (size_t)(code - SC_F1);
-	console_switch(index);
+	if (code < SC_DIGIT1 || code >= SC_DIGIT1 + CONSOLE_COUNT)
+		return (FALSE);
+
+	console_switch((size_t)(code - SC_DIGIT1));
 	return (TRUE);
 }
 

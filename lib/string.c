@@ -26,18 +26,6 @@ int k_strcmp(const char *a, const char *b)
 	return ((int)(uint8_t)*a - (int)(uint8_t)*b);
 }
 
-/* strcmp ile ayni, ama en fazla n byte karsilastirir. */
-int k_strncmp(const char *a, const char *b, size_t n)
-{
-	size_t i = 0;
-
-	while (i < n && a[i] != '\0' && a[i] == b[i])
-		i++;
-	if (i == n)
-		return (0);
-	return ((int)(uint8_t)a[i] - (int)(uint8_t)b[i]);
-}
-
 /* Bellek blogunu tek bir byte degeriyle doldurur (buffer temizlemede kullanilir). */
 void *k_memset(void *dst, uint8_t value, size_t n)
 {

@@ -10,7 +10,6 @@
 #include "printk.h"
 #include "keyboard.h"
 #include "string.h"
-#include "io.h"
 
 /* Her virtual screen'e kisa bir baslik yazar (bonus: coklu ekran). */
 static void draw_headers(void)
@@ -48,7 +47,7 @@ static void print_info(void)
 		(int)k_strlen("42"), k_strcmp("a", "a"));
 	console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
 	printk("\nKlavye aktif: yazabilirsin (backspace calisir).\n");
-	printk("Ekran degistir: Alt+F1..F%d (Ctrl+F1..F%d de olur).\n\n",
+	printk("Ekran degistir: Alt+1..%d (Ctrl+1..%d de olur).\n\n",
 		CONSOLE_COUNT, CONSOLE_COUNT);
 	console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
 }

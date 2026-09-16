@@ -19,11 +19,9 @@ typedef __builtin_va_list va_list_t;
 ** Isaretsiz sayiyi istenen base'de (10 veya 16) yazar.
 ** Basamaklari ters sirada uretip gecici buffer'a koyar, sonra ters cevirip basar.
 */
-static void print_uint(uint32_t value, uint32_t base, bool_t upper)
+static void print_uint(uint32_t value, uint32_t base)
 {
-	const char *digits_lower = "0123456789abcdef";
-	const char *digits_upper = "0123456789ABCDEF";
-	const char *digits = upper ? digits_upper : digits_lower;
+	const char *digits = "0123456789abcdef";
 	char        tmp[32];
 	size_t      len = 0;
 
@@ -54,7 +52,7 @@ static void print_int(int32_t value)
 	}
 	else
 		magnitude = (uint32_t)value;
-	print_uint(magnitude, 10, FALSE);
+	print_uint(magnitude, 10);
 }
 
 void printk(const char *format, ...)
@@ -83,16 +81,14 @@ void printk(const char *format, ...)
 		else if (format[i] == 'd' || format[i] == 'i')
 			print_int(VA_ARG(ap, int32_t));
 		else if (format[i] == 'u')
-			print_uint(VA_ARG(ap, uint32_t), 10, FALSE);
+			print_uint(VA_ARG(ap, uint32_t), 10);
 		else if (format[i] == 'x')
-			print_uint(VA_ARG(ap, uint32_t), 16, FALSE);
-		else if (format[i] == 'X')
-			print_uint(VA_ARG(ap, uint32_t), 16, TRUE);
+			print_uint(VA_ARG(ap, uint32_t), 16);
 		else if (format[i] == 'p')
 		{
 			/* Pointer'i 0x... seklinde hexadecimal basar */
 			console_write("0x");
-			print_uint((uint32_t)VA_ARG(ap, void *), 16, FALSE);
+			print_uint((uint32_t)VA_ARG(ap, void *), 16);
 		}
 		else if (format[i] == '%')
 			console_putchar('%');

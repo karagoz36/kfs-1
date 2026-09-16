@@ -102,11 +102,6 @@ void console_switch(size_t index)
 	sync_cursor();
 }
 
-size_t console_current(void)
-{
-	return (g_active);
-}
-
 /* Bundan sonra yazilacak karakterlerin rengini belirler (bonus). */
 void console_set_color(uint8_t fg, uint8_t bg)
 {

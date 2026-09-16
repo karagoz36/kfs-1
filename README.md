@@ -74,10 +74,10 @@ Detaylar:
 | `grub/grub.cfg` | GRUB menüsü: `multiboot /boot/kernel.bin` |
 | `kernel/main.c` | `kernel_main`: ekranı kurar, "42" basar, klavye döngüsü |
 | `kernel/console.c` | Virtual screen'ler, yazma, scroll, cursor senkronu |
-| `kernel/printk.c` | `printk` — `%c %s %d %u %x %X %p %%` |
+| `kernel/printk.c` | `printk` — `%c %s %d %i %u %x %p %%` |
 | `drivers/vga.c` | 0xB8000 framebuffer'a yazma + hardware cursor |
 | `drivers/keyboard.c` | PS/2 klavye (polling), scancode → ASCII, kısayollar |
-| `lib/string.c` | `k_strlen`, `k_strcmp`, `k_strncmp`, `k_memset`, `k_memcpy` |
+| `lib/string.c` | `k_strlen`, `k_strcmp`, `k_memset`, `k_memcpy` |
 | `include/*.h` | Kendi tiplerimiz (`types.h`), port I/O (`io.h`), arayüzler |
 | `Makefile` | İki dilli derleme + link + ISO + QEMU |
 | `Dockerfile` | macOS'ta kullanılan Linux build ortamı |
@@ -126,7 +126,12 @@ ekrana tek seferde `vga_blit` ile yansıtılır.
 buffer'ı, cursor pozisyonu ve rengi bulunur. Sadece aktif olan framebuffer'a
 yansıtılır, dolayısıyla arkadaki ekranlar içeriğini kaybetmez.
 
-**Kısayol:** `Alt + F1..F4` (`Ctrl + F1..F4` de çalışır).
+**Kısayol:** `Alt + 1..4` (`Ctrl + 1..4` de çalışır).
+
+> Neden F1..F4 değil: MacBook'ta F1–F4 varsayılan olarak parlaklık/Mission Control
+> tuşudur ve `Ctrl+F1..F4` macOS'un kendi klavye navigasyon kısayoludur — host
+> işletim sistemi tuşu yakalayıp QEMU'ya hiç iletmez. Konu belli bir tuş
+> şart koşmadığı için rakam tuşları seçildi.
 
 ---
 
@@ -144,7 +149,7 @@ Klavye **scancode set 1** gönderir: basışta *make code*, bırakışta aynı k
 - `0x80` bitine bakıp basma/bırakma ayrımı yapar,
 - shift / ctrl / alt durumunu tutar,
 - `0xE0` prefix'li (extended) tuşları atlar,
-- `Alt/Ctrl + F1..F4` ise ekran değiştirir,
+- `Alt/Ctrl + 1..4` ise ekran değiştirir,
 - değilse scancode'u ASCII tablosundan (normal / shift) çevirip ekrana basar.
   Backspace (`\b`), Enter (`\n`) ve Tab (`\t`) `console_putchar` içinde işlenir.
 
@@ -218,5 +223,5 @@ printk testi: string | -42 | 42 | 0xbeef | 0xb8000 | K | %
 k_strlen("42") = 2, k_strcmp("a", "a") = 0
 
 Klavye aktif: yazabilirsin (backspace calisir).
-Ekran degistir: Alt+F1..F4 (Ctrl+F1..F4 de olur).
+Ekran degistir: Alt+1..4 (Ctrl+1..4 de olur).
 ```

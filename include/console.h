@@ -16,7 +16,6 @@
 
 void   console_init(void);
 void   console_switch(size_t index);
-size_t console_current(void);
 void   console_set_color(uint8_t fg, uint8_t bg);
 void   console_clear(void);
 void   console_putchar(char c);

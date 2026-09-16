@@ -27,13 +27,4 @@ static inline uint8_t inb(uint16_t port)
 	return (value);
 }
 
-/*
-** CPU'yu bir sonraki interrupt'a kadar uyutur (halt).
-** Bos dongude islemciyi %100 mesgul etmemek icin kullanilir.
-*/
-static inline void cpu_halt(void)
-{
-	__asm__ volatile("hlt");
-}
-
 #endif
