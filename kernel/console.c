@@ -27,7 +27,11 @@ static t_console *current(void)
 	return (&g_consoles[g_active]);
 }
 
-/* Writes a cell into the buffer; mirrors it on screen if that screen is active. */
+/*
+** Every write goes through here, which is what makes several screens possible:
+** the buffer is always updated, the framebuffer only when this screen is the
+** one being displayed. Background screens therefore keep accumulating text.
+*/
 static void put_cell(t_console *c, size_t index, uint16_t cell)
 {
 	c->buffer[index] = cell;
@@ -35,7 +39,11 @@ static void put_cell(t_console *c, size_t index, uint16_t cell)
 		vga_write_cell(index, cell);
 }
 
-/* Moves the hardware cursor to the active screen's position. */
+/*
+** There are two cursors: ours (row/col in the struct) and the hardware one
+** blinking on screen. Writing a character only moves ours, so this is called
+** after every operation that changes the position to keep them in step.
+*/
 static void sync_cursor(void)
 {
 	vga_move_cursor(current()->row, current()->col);
@@ -49,7 +57,11 @@ static void scroll(t_console *c)
 {
 	size_t i;
 
-	/* Move everything from line 1 onwards one line up */
+	/*
+	** Destination is the first line, source is the second (buffer + one row),
+	** length is 24 rows. The first line is overwritten and everything below
+	** moves up by one.
+	*/
 	k_memcpy(c->buffer, c->buffer + VGA_WIDTH,
 		(VGA_HEIGHT - 1) * VGA_WIDTH * sizeof(uint16_t));
 
@@ -114,6 +126,11 @@ void console_clear(void)
 	t_console *c = current();
 	size_t     i = 0;
 
+	/*
+	** Spaces carrying the console's own color, rather than plain zeros: every
+	** cell then holds a defined attribute, so scrolling and backspace (which
+	** write spaces too) blend in with the rest of the screen.
+	*/
 	while (i < VGA_WIDTH * VGA_HEIGHT)
 	{
 		c->buffer[i] = vga_entry(' ', c->color);
@@ -145,7 +162,11 @@ void console_putchar(char c)
 	}
 	else if (c == '\b')
 	{
-		/* Step back one cell; at the start of a line go up to the previous one */
+		/*
+		** Step back one cell; at the start of a line go up to the previous
+		** one. The row check matters: col is unsigned, so decrementing it at
+		** column 0 would wrap around to a huge value.
+		*/
 		if (con->col > 0)
 			con->col--;
 		else if (con->row > 0)

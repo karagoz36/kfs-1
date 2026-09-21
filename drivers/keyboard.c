@@ -83,6 +83,8 @@ static bool_t handle_shortcut(uint8_t code)
 	if (code < SC_DIGIT1 || code >= SC_DIGIT1 + CONSOLE_COUNT)
 		return (FALSE);
 
+	/* The scancodes of 1..4 are consecutive (0x02..0x05), so subtracting the
+	** first one yields the console index directly. */
 	console_switch((size_t)(code - SC_DIGIT1));
 	return (TRUE);
 }
@@ -111,6 +113,8 @@ void keyboard_poll(void)
 		return ;
 	}
 
+	/* Bit 7 tells a release from a press; clearing it gives the key itself.
+	** Without this split every key would be handled twice. */
 	pressed = (scancode & SC_RELEASE_FLAG) ? FALSE : TRUE;
 	code = scancode & (uint8_t)(SC_RELEASE_FLAG - 1);
 
@@ -130,6 +134,8 @@ void keyboard_poll(void)
 	if (handle_shortcut(code))
 		return ;
 
+	/* The scancode indexes the table directly; a 0 entry means the key has no
+	** printable character (function keys, caps lock, ...). */
 	c = g_shift ? g_keymap_shift[code] : g_keymap[code];
 	if (c != 0)
 		console_putchar(c);

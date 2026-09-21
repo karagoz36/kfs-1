@@ -26,6 +26,8 @@ static void print_uint(uint32_t value, uint32_t base)
 	char        tmp[32];
 	size_t      len = 0;
 
+	/* value % base yields the rightmost digit first, so digits are collected
+	** in reverse and printed backwards below. */
 	if (value == 0)
 		tmp[len++] = '0';
 	while (value > 0)
@@ -71,6 +73,8 @@ void printk(const char *format, ...)
 			continue ;
 		}
 		i++;
+		/* char is promoted to int when passed through '...', so it has to be
+		** read back as an int and narrowed afterwards. */
 		if (format[i] == 'c')
 			console_putchar((char)VA_ARG(ap, int));
 		else if (format[i] == 's')
