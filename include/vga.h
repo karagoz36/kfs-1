@@ -1,9 +1,9 @@
 /*
-** vga.h — VGA text mode (80x25) donaniminin dusuk seviyeli arayuzu.
+** vga.h — low-level interface to the VGA text mode (80x25) hardware.
 **
-** BIOS/GRUB bizi ekran "text mode"dayken birakir. Bu modda ekran,
-** 0xB8000 adresinden baslayan bir framebuffer'dir: her hucre 2 byte,
-** dusuk byte = ASCII karakter, yuksek byte = renk (attribute).
+** BIOS/GRUB leave us in text mode. In that mode the screen is a framebuffer
+** starting at 0xB8000: every cell is 2 bytes, the low byte holds the ASCII
+** character and the high byte the color attribute.
 */
 
 #ifndef VGA_H
@@ -15,7 +15,7 @@
 #define VGA_HEIGHT  25
 #define VGA_MEMORY  ((volatile uint16_t *)0xB8000)
 
-/* Standart VGA 16 renk paleti (bonus: renk destegi) */
+/* The standard 16-color VGA palette (bonus: color support) */
 enum e_vga_color
 {
 	VGA_BLACK = 0,
@@ -36,13 +36,13 @@ enum e_vga_color
 	VGA_WHITE
 };
 
-/* Arka plan (yuksek 4 bit) + on plan (dusuk 4 bit) -> attribute byte */
+/* Background (high 4 bits) + foreground (low 4 bits) -> attribute byte */
 static inline uint8_t vga_color(uint8_t fg, uint8_t bg)
 {
 	return ((uint8_t)(fg | (bg << 4)));
 }
 
-/* Karakter + renk -> framebuffer'a yazilacak 16-bit hucre */
+/* Character + color -> the 16-bit cell written to the framebuffer */
 static inline uint16_t vga_entry(char c, uint8_t color)
 {
 	return ((uint16_t)(uint8_t)c | ((uint16_t)color << 8));

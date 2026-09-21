@@ -1,10 +1,10 @@
 /*
-** console.c — Virtual screen yonetimi, yazma, scroll ve cursor.
+** console.c — virtual screen management, writing, scrolling and the cursor.
 **
-** Tasarim: her virtual screen bir struct. Yazma islemleri her zaman ilgili
-** screen'in kendi buffer'ina yapilir; ekranda gorunen screen ise ayrica
-** VGA framebuffer'ina da yazilir. Boylece arka plandaki screen'ler icerigini
-** kaybetmez ve gecis aninda tek bir blit yeterlidir.
+** Design: every virtual screen is a struct. Writes always go to that screen's
+** own buffer; the screen currently displayed is additionally written into the
+** VGA framebuffer. Background screens therefore keep their contents and a
+** single blit is enough when switching.
 */
 
 #include "console.h"
@@ -12,22 +12,22 @@
 
 typedef struct s_console
 {
-	uint16_t buffer[VGA_WIDTH * VGA_HEIGHT]; /* screen'in kendi kopyasi */
-	size_t   row;                            /* cursor satiri */
-	size_t   col;                            /* cursor sutunu */
-	uint8_t  color;                          /* aktif renk attribute'u */
+	uint16_t buffer[VGA_WIDTH * VGA_HEIGHT]; /* the screen's own copy */
+	size_t   row;                            /* cursor row */
+	size_t   col;                            /* cursor column */
+	uint8_t  color;                          /* current color attribute */
 }	t_console;
 
 static t_console g_consoles[CONSOLE_COUNT];
 static size_t    g_active = 0;
 
-/* Aktif screen'e kisayol. */
+/* Shorthand for the active screen. */
 static t_console *current(void)
 {
 	return (&g_consoles[g_active]);
 }
 
-/* Bir hucreyi buffer'a yazar; screen aktifse ekrana da yansitir. */
+/* Writes a cell into the buffer; mirrors it on screen if that screen is active. */
 static void put_cell(t_console *c, size_t index, uint16_t cell)
 {
 	c->buffer[index] = cell;
@@ -35,25 +35,25 @@ static void put_cell(t_console *c, size_t index, uint16_t cell)
 		vga_write_cell(index, cell);
 }
 
-/* Cursor'u donanimda aktif screen'in pozisyonuna tasir. */
+/* Moves the hardware cursor to the active screen's position. */
 static void sync_cursor(void)
 {
 	vga_move_cursor(current()->row, current()->col);
 }
 
 /*
-** Scroll (bonus): ekran dolunca butun satirlari bir yukari kaydirir,
-** en alt satiri bosaltir ve cursor'u son satirda tutar.
+** Scroll (bonus): when the screen is full, shift every line up by one, blank
+** the last line and keep the cursor on it.
 */
 static void scroll(t_console *c)
 {
 	size_t i;
 
-	/* 1. satirdan itibaren her seyi bir satir yukari tasi */
+	/* Move everything from line 1 onwards one line up */
 	k_memcpy(c->buffer, c->buffer + VGA_WIDTH,
 		(VGA_HEIGHT - 1) * VGA_WIDTH * sizeof(uint16_t));
 
-	/* Son satiri bosluk ile doldur */
+	/* Fill the last line with spaces */
 	i = (VGA_HEIGHT - 1) * VGA_WIDTH;
 	while (i < VGA_HEIGHT * VGA_WIDTH)
 		c->buffer[i++] = vga_entry(' ', c->color);
@@ -63,7 +63,7 @@ static void scroll(t_console *c)
 		vga_blit(c->buffer);
 }
 
-/* Satir sonuna gelindiginde alt satira gec, ekran sonundaysa scroll et. */
+/* Move to the next line; scroll when the bottom of the screen is reached. */
 static void newline(t_console *c)
 {
 	c->col = 0;
@@ -72,7 +72,7 @@ static void newline(t_console *c)
 		scroll(c);
 }
 
-/* Tum screen'leri sifirlar ve ilk screen'i aktif yapar. */
+/* Resets every screen and makes the first one active. */
 void console_init(void)
 {
 	size_t i = 0;
@@ -82,7 +82,7 @@ void console_init(void)
 		g_consoles[i].row = 0;
 		g_consoles[i].col = 0;
 		g_consoles[i].color = vga_color(VGA_LIGHT_GREY, VGA_BLACK);
-		g_active = i;             /* console_clear aktif screen uzerinde calisir */
+		g_active = i;             /* console_clear works on the active screen */
 		console_clear();
 		i++;
 	}
@@ -92,7 +92,7 @@ void console_init(void)
 	sync_cursor();
 }
 
-/* Aktif screen'i degistirir ve yeni screen'i ekrana basar (bonus). */
+/* Changes the active screen and paints it on the display (bonus). */
 void console_switch(size_t index)
 {
 	if (index >= CONSOLE_COUNT || index == g_active)
@@ -102,13 +102,13 @@ void console_switch(size_t index)
 	sync_cursor();
 }
 
-/* Bundan sonra yazilacak karakterlerin rengini belirler (bonus). */
+/* Sets the color used by the characters written from now on (bonus). */
 void console_set_color(uint8_t fg, uint8_t bg)
 {
 	current()->color = vga_color(fg, bg);
 }
 
-/* Aktif screen'i bosluklarla doldurur ve cursor'u basa alir. */
+/* Fills the active screen with spaces and moves the cursor back to the top. */
 void console_clear(void)
 {
 	t_console *c = current();
@@ -126,9 +126,9 @@ void console_clear(void)
 }
 
 /*
-** Tek karakter yazar. Ozel karakterler:
-**  '\n' -> yeni satir, '\t' -> 4'un katina hizalama,
-**  '\b' -> silme (backspace).
+** Writes one character. Special characters:
+**  '\n' -> new line, '\t' -> align to the next multiple of 4,
+**  '\b' -> erase (backspace).
 */
 void console_putchar(char c)
 {
@@ -145,7 +145,7 @@ void console_putchar(char c)
 	}
 	else if (c == '\b')
 	{
-		/* Bir karakter geri git; satir basindaysak ust satirin sonuna don */
+		/* Step back one cell; at the start of a line go up to the previous one */
 		if (con->col > 0)
 			con->col--;
 		else if (con->row > 0)
@@ -161,13 +161,13 @@ void console_putchar(char c)
 		put_cell(con, con->row * VGA_WIDTH + con->col,
 			vga_entry(c, con->color));
 		con->col++;
-		if (con->col >= VGA_WIDTH)  /* satir tasti -> otomatik alt satir */
+		if (con->col >= VGA_WIDTH)  /* line overflowed -> wrap automatically */
 			newline(con);
 	}
 	sync_cursor();
 }
 
-/* Null ile biten string'i ekrana yazar. */
+/* Writes a null-terminated string. */
 void console_write(const char *s)
 {
 	size_t i = 0;

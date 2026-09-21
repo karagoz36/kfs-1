@@ -1,9 +1,9 @@
 /*
-** types.h — Kernel'in kendi temel tipleri.
+** types.h — the kernel's own basic types.
 **
-** Kernel freestanding (-nostdlib) derlendigi icin <stdint.h> gibi standart
-** header'lari kullanmiyoruz. i386 (32-bit protected mode) icin boyutlar sabit:
-** char 1, short 2, int 4 byte.
+** The kernel is built freestanding (-nostdlib), so standard headers such as
+** <stdint.h> are unavailable. On i386 (32-bit protected mode) the sizes are
+** fixed: char 1, short 2, int 4 bytes.
 */
 
 #ifndef TYPES_H
@@ -14,10 +14,10 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef signed int         int32_t;
 
-/* i386'da pointer 4 byte oldugu icin size_t = unsigned int */
+/* A pointer is 4 bytes on i386, hence size_t = unsigned int */
 typedef unsigned int       size_t;
 
-/* Basit boolean; C99 <stdbool.h> yok */
+/* Minimal boolean; C99 <stdbool.h> is not available */
 typedef uint8_t            bool_t;
 #define TRUE  1
 #define FALSE 0

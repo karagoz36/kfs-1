@@ -1,6 +1,6 @@
 /*
-** printk.h — Kernel icin basit formatli yazdirma (bonus).
-** Desteklenen format specifier'lar: %c %s %d %i %u %x %p %%
+** printk.h — simple formatted printing for the kernel (bonus).
+** Supported format specifiers: %c %s %d %i %u %x %p %%
 */
 
 #ifndef PRINTK_H

@@ -1,10 +1,10 @@
 /*
-** io.h — x86 port I/O (giris/cikis) yardimcilari.
+** io.h — x86 port I/O helpers.
 **
-** x86'da bazi donanimlar (VGA cursor register'lari, PS/2 klavye controller'i)
-** bellek uzerinden degil, ayri bir "I/O address space" uzerinden konusulur.
-** Bu adres alanina sadece 'in' ve 'out' instruction'lari ile erisilir, bu yuzden
-** inline assembly kullanmak zorundayiz.
+** Some devices (the VGA cursor registers, the PS/2 keyboard controller) are
+** not reached through memory but through a separate I/O address space. That
+** space is only accessible with the 'in' and 'out' instructions, which have no
+** equivalent in C, so inline assembly is required.
 */
 
 #ifndef IO_H
@@ -12,13 +12,13 @@
 
 #include "types.h"
 
-/* Verilen port'a 1 byte yazar. "a" = al register'i, "Nd" = dx ya da sabit port */
+/* Writes one byte to the given port. "a" = al register, "Nd" = dx or immediate */
 static inline void outb(uint16_t port, uint8_t value)
 {
 	__asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
-/* Verilen port'tan 1 byte okur ve geri dondurur. */
+/* Reads one byte from the given port. */
 static inline uint8_t inb(uint16_t port)
 {
 	uint8_t value;

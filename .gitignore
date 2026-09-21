@@ -1,5 +1,5 @@
-# Derleme ciktilari (object'ler, gecici isodir)
+# Build output (objects, temporary isodir)
 build/
 
-# Not: kfs.iso repoya dahildir - konu "basic virtual image" teslimini istiyor.
+# Note: kfs.iso is committed on purpose - the subject asks for a virtual image.
 .DS_Store

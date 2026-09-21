@@ -1,25 +1,24 @@
 /*
-** keyboard.c — PS/2 klavye surucusu (bonus).
+** keyboard.c — PS/2 keyboard driver (bonus).
 **
-** KFS_1'de henuz IDT/interrupt altyapisi yok, bu yuzden klavyeyi "polling"
-** ile okuyoruz: PS/2 controller'in status port'una (0x64) bakip output
-** buffer dolu ise data port'undan (0x60) scancode aliyoruz.
+** KFS_1 has no IDT/interrupt support yet, so the keyboard is read by polling:
+** we check the PS/2 controller's status port and, when its output buffer is
+** full, read the scancode from the data port.
 **
-** Klavye "scancode set 1" gonderir: tusa basildiginda make code, birakildiginda
-** ayni kodun 0x80 eklenmis hali (break code) gelir.
+** The keyboard sends "scancode set 1": pressing a key produces a make code,
+** releasing it produces the same code with 0x80 added (a break code).
 */
 
 #include "keyboard.h"
 #include "console.h"
-#include "printk.h"
 #include "io.h"
 
 #define PS2_DATA_PORT   0x60
 #define PS2_STATUS_PORT 0x64
-#define PS2_OUTPUT_FULL 0x01  /* status register bit 0: okunacak veri var mi */
+#define PS2_OUTPUT_FULL 0x01  /* status register bit 0: data available */
 
-#define SC_RELEASE_FLAG 0x80  /* break code'lari ayirt eden bit */
-#define SC_EXTENDED     0xE0  /* bazi tuslar iki byte gonderir */
+#define SC_RELEASE_FLAG 0x80  /* the bit that marks break codes */
+#define SC_EXTENDED     0xE0  /* some keys send two bytes */
 
 #define SC_LSHIFT       0x2A
 #define SC_RSHIFT       0x36
@@ -27,17 +26,17 @@
 #define SC_ALT          0x38
 #define SC_DIGIT1       0x02  /* 1..4 -> 0x02, 0x03, 0x04, 0x05 */
 
-/* Modifier tuslarin anlik durumu */
+/* Current state of the modifier keys */
 static bool_t g_shift = FALSE;
 static bool_t g_ctrl  = FALSE;
 static bool_t g_alt   = FALSE;
 
-/* Bir sonraki scancode'un extended (0xE0 sonrasi) olup olmadigi */
+/* Whether the next scancode follows an 0xE0 (extended) prefix */
 static bool_t g_extended = FALSE;
 
 /*
-** Scancode -> ASCII tablosu (US QWERTY, set 1).
-** 0 = bu tusun yazdirilacak bir karsiligi yok (F tuslari, modifier'lar vs.)
+** Scancode -> ASCII table (US QWERTY, set 1).
+** 0 means the key has no printable equivalent (function keys, modifiers, ...)
 */
 static const char g_keymap[SC_RELEASE_FLAG] = {
 	0,    27,  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -47,7 +46,7 @@ static const char g_keymap[SC_RELEASE_FLAG] = {
 	0,    '*', 0,   ' '
 };
 
-/* Shift basiliyken ayni scancode'larin verdigi karakterler */
+/* The characters the same scancodes produce while shift is held */
 static const char g_keymap_shift[SC_RELEASE_FLAG] = {
 	0,    27,  '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
 	'\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
@@ -56,7 +55,7 @@ static const char g_keymap_shift[SC_RELEASE_FLAG] = {
 	0,    '*', 0,   ' '
 };
 
-/* Modifier tuslarini isler; isledi ise TRUE doner (karakter basilmaz). */
+/* Handles modifier keys; returns TRUE when it did (no character is printed). */
 static bool_t handle_modifier(uint8_t code, bool_t pressed)
 {
 	if (code == SC_LSHIFT || code == SC_RSHIFT)
@@ -71,14 +70,14 @@ static bool_t handle_modifier(uint8_t code, bool_t pressed)
 }
 
 /*
-** Ekran degistirme kisayolu (bonus): Alt + 1..4 (Ctrl + 1..4 de olur).
-** Rakam tuslari secildi cunku F1..F4 host isletim sistemi tarafindan
-** (ornegin macOS'ta parlaklik/Mission Control) yakalanabiliyor.
-** Islenirse TRUE doner, boylece o tus ekrana karakter olarak basilmaz.
+** Screen switching shortcut (bonus): Alt + 1..4 (Ctrl + 1..4 works too).
+** Digits were chosen because F1..F4 can be captured by the host operating
+** system (brightness / Mission Control on macOS, for example).
+** Returns TRUE when handled, so the key is not printed as a character.
 */
 static bool_t handle_shortcut(uint8_t code)
 {
-	/* Modifier basili degilse bu normal bir tustur */
+	/* Without a modifier this is an ordinary key */
 	if (!g_alt && !g_ctrl)
 		return (FALSE);
 	if (code < SC_DIGIT1 || code >= SC_DIGIT1 + CONSOLE_COUNT)
@@ -89,8 +88,8 @@ static bool_t handle_shortcut(uint8_t code)
 }
 
 /*
-** Bekleyen scancode varsa okur ve isler.
-** kernel_main icindeki ana dongude surekli cagrilir.
+** Reads and handles a pending scancode, if any.
+** Called continuously from the main loop in kernel_main.
 */
 void keyboard_poll(void)
 {
@@ -105,7 +104,7 @@ void keyboard_poll(void)
 		return ;
 	scancode = inb(PS2_DATA_PORT);
 
-	/* 0xE0 bir prefix'tir: asil kod bir sonraki okumada gelir */
+	/* 0xE0 is a prefix: the real code arrives with the next read */
 	if (scancode == SC_EXTENDED)
 	{
 		g_extended = TRUE;
@@ -121,7 +120,7 @@ void keyboard_poll(void)
 		return ;
 	}
 
-	/* Sadece tusa basma anini isliyoruz, birakmayi yok sayiyoruz */
+	/* Only key presses are handled; releases are ignored */
 	if (!pressed || g_extended)
 	{
 		g_extended = FALSE;

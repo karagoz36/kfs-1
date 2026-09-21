@@ -1,9 +1,9 @@
 /*
-** printk.c — printf benzeri yazdirma fonksiyonu.
+** printk.c — printf-like printing function.
 **
-** <stdarg.h> kullanamadigimiz icin degisken argumanlari GCC'nin built-in
-** mekanizmasi (__builtin_va_list) ile okuyoruz; bu, header degil derleyicinin
-** kendi ozelligi oldugu icin freestanding ortamda serbesttir.
+** <stdarg.h> is unavailable, so variadic arguments are read through GCC's own
+** built-in mechanism (__builtin_va_list). That is a compiler feature rather
+** than a header, so it is fine in a freestanding environment.
 */
 
 #include "printk.h"
@@ -16,8 +16,9 @@ typedef __builtin_va_list va_list_t;
 #define VA_END(ap)         __builtin_va_end(ap)
 
 /*
-** Isaretsiz sayiyi istenen base'de (10 veya 16) yazar.
-** Basamaklari ters sirada uretip gecici buffer'a koyar, sonra ters cevirip basar.
+** Prints an unsigned number in the requested base (10 or 16).
+** Division yields the digits in reverse order, so they are collected in a
+** temporary buffer and then printed backwards.
 */
 static void print_uint(uint32_t value, uint32_t base)
 {
@@ -36,7 +37,7 @@ static void print_uint(uint32_t value, uint32_t base)
 		console_putchar(tmp[--len]);
 }
 
-/* Isaretli sayi: negatifse once '-' basar, sonra mutlak degerini yazar. */
+/* Signed number: print '-' first, then the magnitude. */
 static void print_int(int32_t value)
 {
 	uint32_t magnitude;
@@ -45,8 +46,8 @@ static void print_int(int32_t value)
 	{
 		console_putchar('-');
 		/*
-		** INT_MIN (-2147483648) icin -value tasma yapar; bu yuzden isareti
-		** unsigned aritmetikle (two's complement) ceviriyoruz.
+		** -value overflows for INT_MIN (-2147483648), so the sign is flipped
+		** with unsigned arithmetic (two's complement) instead.
 		*/
 		magnitude = (uint32_t)(~(uint32_t)value + 1u);
 	}
@@ -63,7 +64,7 @@ void printk(const char *format, ...)
 	VA_START(ap, format);
 	while (format[i] != '\0')
 	{
-		/* Normal karakterler dogrudan ekrana gider */
+		/* Ordinary characters go straight to the screen */
 		if (format[i] != '%')
 		{
 			console_putchar(format[i++]);
@@ -86,7 +87,7 @@ void printk(const char *format, ...)
 			print_uint(VA_ARG(ap, uint32_t), 16);
 		else if (format[i] == 'p')
 		{
-			/* Pointer'i 0x... seklinde hexadecimal basar */
+			/* Pointers are printed as 0x... in hexadecimal */
 			console_write("0x");
 			print_uint((uint32_t)VA_ARG(ap, void *), 16);
 		}
@@ -94,7 +95,7 @@ void printk(const char *format, ...)
 			console_putchar('%');
 		else
 		{
-			/* Taninmayan specifier: oldugu gibi yazdir (%q -> "%q") */
+			/* Unknown specifier: print it as it was written (%q -> "%q") */
 			console_putchar('%');
 			if (format[i] != '\0')
 				console_putchar(format[i]);

@@ -1,43 +1,43 @@
 /*
-** linker.ld — Kernel'in bellek yerlesimini tarif eden linker script.
+** linker.ld — the linker script describing the kernel's memory layout.
 **
-** Host sisteminin hazir .ld dosyasini kullanamayiz (konu bunu yasakliyor ve
-** zaten bootable bir binary uretmez), bu yuzden yerlesimi kendimiz yaziyoruz.
+** The host system's own .ld file cannot be used (the subject forbids it and it
+** would not produce a bootable binary anyway), so the layout is written here.
 */
 
-/* Bootloader'in atlayacagi giris noktasi (boot.asm icinde tanimli) */
+/* The entry point the bootloader jumps to (defined in boot.asm) */
 ENTRY(_start)
 
 SECTIONS
 {
 	/*
-	** Kernel 1 MB adresine yerlesir: ilk 1 MB'da BIOS, VGA framebuffer ve
-	** diger donanim bolgeleri bulunur, oraya yazmak guvenli degildir.
+	** The kernel is placed at 1 MB: the first megabyte holds the BIOS, the
+	** VGA framebuffer and other device regions, which are not safe to write.
 	*/
 	. = 1M;
 
-	/* Multiboot header ilk 8 KB icinde olmali -> en basa koyuyoruz */
+	/* The multiboot header must sit within the first 8 KB -> put it first */
 	.text ALIGN(4K) :
 	{
 		*(.multiboot)
 		*(.text)
 	}
 
-	/* Salt okunur veriler (string literal'ler, keymap tablolari) */
+	/* Read-only data (string literals, keymap tables) */
 	.rodata ALIGN(4K) :
 	{
 		*(.rodata)
 	}
 
-	/* Ilk degeri olan global/static degiskenler */
+	/* Initialised global/static variables */
 	.data ALIGN(4K) :
 	{
 		*(.data)
 	}
 
 	/*
-	** Sifirlanmis degiskenler ve stack. Binary'de yer kaplamaz,
-	** sadece calisma aninda bellekte ayrilir.
+	** Zeroed variables and the stack. They take no space in the binary and
+	** are only reserved in memory at run time.
 	*/
 	.bss ALIGN(4K) :
 	{

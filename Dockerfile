@@ -1,13 +1,13 @@
-# macOS (Apple Silicon) uzerinde gelistirirken kullanilan build ortami.
-# Mac'te gcc -m32, ld -m elf_i386 ve grub-mkrescue yok; bu container
-# Linux/x86_64 icinde okuldaki Fedora ile ayni araclari sunar.
+# Build environment used while developing on macOS (Apple Silicon).
+# macOS has no gcc -m32, no ld -m elf_i386 and no grub-mkrescue; this container
+# provides the same tools inside Linux/x86_64 as the Fedora machines at school.
 #
-# Kullanim:  make docker   (Makefile bu imaji kurup 'make re' calistirir)
+# Usage:  make docker   (the Makefile builds this image and runs 'make re')
 
 FROM debian:bookworm-slim
 
-# Not: -o Acquire::Check-Date=false -> container ile host arasindaki saat
-# farkinda apt'nin "Release file is not valid yet" hatasi vermesini onler.
+# Note: -o Acquire::Check-Date=false prevents apt's "Release file is not valid
+# yet" error when the container and host clocks differ.
 RUN apt-get -o Acquire::Check-Date=false update && \
 	apt-get install -y --no-install-recommends \
 	build-essential \

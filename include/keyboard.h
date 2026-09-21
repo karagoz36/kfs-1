@@ -1,5 +1,5 @@
 /*
-** keyboard.h — PS/2 klavye surucusu arayuzu (bonus).
+** keyboard.h — PS/2 keyboard driver interface (bonus).
 */
 
 #ifndef KEYBOARD_H

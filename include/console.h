@@ -1,9 +1,9 @@
 /*
-** console.h — Kernel ile ekran arasindaki arayuz.
+** console.h — interface between the kernel and the screen.
 **
-** Birden fazla "virtual screen" (bonus) tutariz: her screen'in kendi
-** 80x25 buffer'i, kendi cursor pozisyonu ve kendi rengi vardir.
-** Sadece aktif olan screen VGA framebuffer'ina yansitilir (blit edilir).
+** We keep several "virtual screens" (bonus): each one has its own 80x25
+** buffer, its own cursor position and its own color. Only the active screen
+** is mirrored (blitted) into the VGA framebuffer.
 */
 
 #ifndef CONSOLE_H

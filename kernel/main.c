@@ -1,9 +1,9 @@
 /*
-** main.c — Kernel'in C tarafindaki giris noktasi.
+** main.c — the kernel's entry point on the C side.
 **
-** Akis: GRUB -> boot.asm (_start) -> kernel_main().
-** Buraya gelindiginde CPU 32-bit protected mode'dadir, interrupt'lar kapalidir
-** ve boot.asm bize bir stack hazirlamistir.
+** Flow: GRUB -> boot.asm (_start) -> kernel_main().
+** By the time we get here the CPU is in 32-bit protected mode, interrupts are
+** disabled and boot.asm has set up a stack for us.
 */
 
 #include "console.h"
@@ -11,7 +11,7 @@
 #include "keyboard.h"
 #include "string.h"
 
-/* Her virtual screen'e kisa bir baslik yazar (bonus: coklu ekran). */
+/* Writes a short header on every virtual screen (bonus: multiple screens). */
 static void draw_headers(void)
 {
 	size_t i = 0;
@@ -29,7 +29,7 @@ static void draw_headers(void)
 	console_switch(0);
 }
 
-/* Mandatory kisim: ekranda "42" gostermek. */
+/* The mandatory part: display "42" on the screen. */
 static void print_banner(void)
 {
 	console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
@@ -37,28 +37,29 @@ static void print_banner(void)
 	console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
 }
 
-/* Bonus'lari gosteren kisa bir tanitim ve kullanim bilgisi. */
+/* A short summary showing the bonus features and how to use them. */
 static void print_info(void)
 {
 	printk("Kernel From Scratch 1 - bootloader: GRUB (multiboot)\n");
-	printk("printk testi: %s | %d | %u | 0x%x | %p | %c | %%\n",
+	printk("printk test: %s | %d | %u | 0x%x | %p | %c | %%\n",
 		"string", -42, 42u, 48879u, (void *)0xB8000, 'K');
 	printk("k_strlen(\"42\") = %d, k_strcmp(\"a\", \"a\") = %d\n",
 		(int)k_strlen("42"), k_strcmp("a", "a"));
 	console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
-	printk("\nKlavye aktif: yazabilirsin (backspace calisir).\n");
-	printk("Ekran degistir: Alt+1..%d (Ctrl+1..%d de olur).\n\n",
+	printk("\nKeyboard is live: type away (backspace works).\n");
+	printk("Switch screen: Alt+1..%d (Ctrl+1..%d works too).\n\n",
 		CONSOLE_COUNT, CONSOLE_COUNT);
 	console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
 }
 
 /*
-** kernel_main geri donmez: bootloader artik bellekte yok, donecek yer yok.
-** Sonsuz dongude klavyeyi poll ediyoruz.
+** kernel_main never returns: the bootloader is gone, there is nowhere to
+** return to. The main loop simply polls the keyboard.
 **
-** Neden 'hlt' yok: GRUB bizi interrupt'lar kapali (IF = 0) birakir ve KFS_1'de
-** henuz IDT yok, yani 'sti' atamayiz. IF = 0 iken 'hlt' calistiran CPU hicbir
-** interrupt ile uyanamaz ve makine orada donar. Bu yuzden busy-polling yapiyoruz.
+** Why there is no 'hlt': GRUB leaves interrupts disabled (IF = 0) and KFS_1
+** has no IDT yet, so we cannot issue 'sti'. A CPU executing 'hlt' with IF = 0
+** can never be woken by an interrupt and the machine freezes there. Hence the
+** busy-polling loop.
 */
 void kernel_main(void)
 {

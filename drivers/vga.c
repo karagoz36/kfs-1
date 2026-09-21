@@ -1,27 +1,27 @@
 /*
-** vga.c — VGA text mode surucusu.
+** vga.c — VGA text mode driver.
 **
-** Iki is yapar:
-**  1) 0xB8000'daki framebuffer'a hucre yazmak,
-**  2) hardware cursor'u CRT controller register'lari uzerinden yonetmek (bonus).
+** It does two things:
+**  1) write cells into the framebuffer at 0xB8000,
+**  2) drive the hardware cursor through the CRT controller registers (bonus).
 */
 
 #include "vga.h"
 #include "io.h"
 
 /*
-** CRT controller: once 0x3D4 (index port) ile hangi register'i yazacagimizi
-** secilir, sonra 0x3D5 (data port) ile deger yazilir.
+** CRT controller: first select the register to write through 0x3D4 (index
+** port), then write the value through 0x3D5 (data port).
 */
 #define CRTC_INDEX_PORT 0x3D4
 #define CRTC_DATA_PORT  0x3D5
 
-#define CRTC_CURSOR_START 0x0A  /* cursor'un ust tarama satiri + gizleme biti */
-#define CRTC_CURSOR_END   0x0B  /* cursor'un alt tarama satiri */
-#define CRTC_CURSOR_HIGH  0x0E  /* cursor pozisyonunun yuksek byte'i */
-#define CRTC_CURSOR_LOW   0x0F  /* cursor pozisyonunun dusuk byte'i */
+#define CRTC_CURSOR_START 0x0A  /* top scanline of the cursor + hide bit */
+#define CRTC_CURSOR_END   0x0B  /* bottom scanline of the cursor */
+#define CRTC_CURSOR_HIGH  0x0E  /* high byte of the cursor position */
+#define CRTC_CURSOR_LOW   0x0F  /* low byte of the cursor position */
 
-/* Framebuffer'daki tek bir hucreyi gunceller. */
+/* Updates a single cell of the framebuffer. */
 void vga_write_cell(size_t index, uint16_t cell)
 {
 	if (index < VGA_WIDTH * VGA_HEIGHT)
@@ -29,8 +29,8 @@ void vga_write_cell(size_t index, uint16_t cell)
 }
 
 /*
-** Verilen 80x25'lik buffer'in tamamini ekrana kopyalar.
-** Virtual screen'ler arasi gecis yaparken (bonus) kullanilir.
+** Copies a whole 80x25 buffer onto the screen.
+** Used when switching between virtual screens (bonus).
 */
 void vga_blit(const uint16_t *buffer)
 {
@@ -44,9 +44,9 @@ void vga_blit(const uint16_t *buffer)
 }
 
 /*
-** Hardware cursor'u gorunur yapar.
-** Cursor start register'inin 5. biti 1 ise cursor gizlidir; onu temizleyip
-** cursor'un hucre icinde hangi tarama satirlarini kaplayacagini (14-15) veriyoruz.
+** Makes the hardware cursor visible.
+** Bit 5 of the cursor start register hides the cursor; we clear it and set
+** the scanlines (14-15) the cursor occupies inside a cell.
 */
 void vga_enable_cursor(void)
 {
@@ -57,9 +57,9 @@ void vga_enable_cursor(void)
 }
 
 /*
-** Cursor'u (row, col) konumuna tasir.
-** Donanim tek boyutlu bir offset bekledigi icin row * 80 + col hesaplanir ve
-** 16-bit deger iki ayri register'a (high/low) bolunerek yazilir.
+** Moves the cursor to (row, col).
+** The hardware expects a linear offset, so we compute row * 80 + col and split
+** the 16-bit value across two registers (high/low).
 */
 void vga_move_cursor(size_t row, size_t col)
 {
