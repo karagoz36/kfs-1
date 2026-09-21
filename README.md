@@ -12,8 +12,6 @@ written from scratch, booted by GRUB and able to write on the screen.
 
 ## 1. Quick start
 
-### Linux (Fedora at school)
-
 ```bash
 sudo dnf install -y gcc nasm binutils make xorriso grub2-tools-extra grub2-pc-modules qemu-system-x86
 make          # produces kernel.bin + kfs.iso
@@ -21,21 +19,8 @@ make run      # boots it in QEMU  (for KVM: make run KVM=1)
 ```
 
 > `grub2-pc-modules` is required: without it `grub2-mkrescue` cannot produce an
-> ISO that boots through BIOS. The Makefile detects the
-> `grub-mkrescue` / `grub2-mkrescue` naming difference itself.
-
-### macOS (development environment)
-
-macOS has no `gcc -m32`, no `ld -m elf_i386` and no `grub-mkrescue`, so the
-build runs inside a Linux container while QEMU runs natively:
-
-```bash
-brew install qemu
-make docker   # clean build inside Docker (linux/amd64) -> kfs.iso
-make run      # start it with the Mac's qemu-system-i386
-```
-
-`make docker-shell` opens a shell in the container for manual work.
+> ISO that boots through BIOS. The Makefile detects the `grub-*` / `grub2-*`
+> naming difference (`mkrescue`, `file`) itself.
 
 ---
 
@@ -82,7 +67,6 @@ Details:
 | `lib/string.c` | `k_strlen`, `k_strcmp`, `k_memcpy` |
 | `include/*.h` | Our own types (`types.h`), port I/O (`io.h`), interfaces |
 | `Makefile` | Two-language build + link + ISO + QEMU |
-| `Dockerfile` | The Linux build environment used on macOS |
 
 ---
 
@@ -130,10 +114,10 @@ framebuffer, so background screens never lose their contents.
 
 **Shortcut:** `Alt + 1..4` (`Ctrl + 1..4` works too).
 
-> Why not F1..F4: on a MacBook F1–F4 default to brightness/Mission Control and
-> `Ctrl+F1..F4` is a macOS keyboard navigation shortcut — the host operating
-> system grabs the key and never passes it to QEMU. The subject does not
-> mandate a specific key, so digits were chosen.
+> Why not F1..F4: the host operating system or desktop can grab those keys
+> (`Alt+F4` closes the QEMU window, `Ctrl+Alt+F1..F4` switch Linux virtual
+> terminals) and never pass them to QEMU. The subject does not mandate a
+> specific key, so digits were chosen.
 
 ---
 
@@ -226,8 +210,6 @@ and passes `--fonts= --locales= --themes= --compress=xz`.
 | `make run` | Boots it in QEMU (`KVM=1` for hardware acceleration) |
 | `make check` | Multiboot compliance + 10 MB limit |
 | `make clean` / `fclean` / `re` | Removes objects / the ISO, rebuilds from scratch |
-| `make docker` | Clean build inside a Linux container (macOS) |
-| `make docker-shell` | Opens a shell in the build container |
 
 ---
 

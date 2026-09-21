@@ -2,4 +2,3 @@
 build/
 
 # Note: kfs.iso is committed on purpose - the subject asks for a virtual image.
-.DS_Store

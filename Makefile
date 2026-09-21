@@ -5,8 +5,7 @@
 # All object files are then linked with our own linker script into a multiboot
 # compliant ELF binary, which GRUB turns into a bootable ISO.
 #
-# On Linux (Fedora/Debian):          make && make run
-# On macOS (no native toolchain):    make docker  -> builds the ISO, then make run
+# Build and boot:  make && make run
 # ==============================================================================
 
 NAME      := kernel.bin
@@ -77,10 +76,7 @@ ifeq ($(KVM),1)
 QEMUFLAGS += -enable-kvm
 endif
 
-# macOS has no native toolchain, so the build runs inside a container
-DOCKER_IMAGE := kfs1-build
-
-.PHONY: all iso run clean fclean re docker docker-image docker-shell check
+.PHONY: all iso run clean fclean re check
 
 all: $(ISO)
 
@@ -102,7 +98,7 @@ $(ISO_DIR)/boot/$(NAME): $(OBJS) linker.ld
 # --- ISO: puts GRUB and the kernel together into a bootable image ---
 $(ISO): $(ISO_DIR)/boot/$(NAME) grub/grub.cfg
 	@if [ -z "$(GRUB_MKRESCUE)" ]; then \
-		echo "ERROR: grub-mkrescue not found. On macOS use 'make docker'."; \
+		echo "ERROR: grub-mkrescue not found (install grub2-tools-extra)."; \
 		exit 1; \
 	fi
 	@mkdir -p $(ISO_DIR)/boot/grub
@@ -115,21 +111,11 @@ iso: $(ISO)
 # Is the kernel really multiboot compliant and the ISO within the 10 MB limit?
 check: $(ISO)
 	$(GRUB_FILE) --is-x86-multiboot $(ISO_DIR)/boot/$(NAME) && echo "multiboot: OK"
-	@test $$(stat -c %s $(ISO) 2>/dev/null || stat -f %z $(ISO)) -lt 10485760 \
+	@test $$(stat -c %s $(ISO)) -lt 10485760 \
 		&& echo "size: under 10 MB OK"
 
 run: $(ISO)
 	$(QEMU) $(QEMUFLAGS)
-
-# --- For macOS: build inside a Linux container ---
-docker-image:
-	docker build --platform linux/amd64 -t $(DOCKER_IMAGE) .
-
-docker: docker-image
-	docker run --rm --platform linux/amd64 -v "$(PWD)":/kfs -w /kfs $(DOCKER_IMAGE) make re
-
-docker-shell: docker-image
-	docker run --rm -it --platform linux/amd64 -v "$(PWD)":/kfs -w /kfs $(DOCKER_IMAGE) bash
 
 clean:
 	rm -rf $(BUILD_DIR)

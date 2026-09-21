@@ -72,7 +72,7 @@ static bool_t handle_modifier(uint8_t code, bool_t pressed)
 /*
 ** Screen switching shortcut (bonus): Alt + 1..4 (Ctrl + 1..4 works too).
 ** Digits were chosen because F1..F4 can be captured by the host operating
-** system (brightness / Mission Control on macOS, for example).
+** system or the desktop (Alt+F4 closes the window, for example).
 ** Returns TRUE when handled, so the key is not printed as a character.
 */
 static bool_t handle_shortcut(uint8_t code)
