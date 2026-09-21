@@ -59,6 +59,7 @@ LDFLAGS := -m elf_i386 -T linker.ld -nostdlib
 # Tool names differ per distribution (grub2-* on Fedora, grub-* on Debian)
 # ------------------------------------------------------------------------------
 GRUB_MKRESCUE := $(shell command -v grub-mkrescue 2>/dev/null || command -v grub2-mkrescue 2>/dev/null)
+GRUB_FILE     := $(shell command -v grub-file 2>/dev/null || command -v grub2-file 2>/dev/null)
 GRUB_I386_DIR := $(firstword $(wildcard /usr/lib/grub/i386-pc /usr/lib/grub2/i386-pc /usr/share/grub2/i386-pc))
 
 # Keep the ISO small: BIOS (i386-pc) target only, no fonts/locales/themes and
@@ -113,7 +114,7 @@ iso: $(ISO)
 
 # Is the kernel really multiboot compliant and the ISO within the 10 MB limit?
 check: $(ISO)
-	grub-file --is-x86-multiboot $(ISO_DIR)/boot/$(NAME) && echo "multiboot: OK"
+	$(GRUB_FILE) --is-x86-multiboot $(ISO_DIR)/boot/$(NAME) && echo "multiboot: OK"
 	@test $$(stat -c %s $(ISO) 2>/dev/null || stat -f %z $(ISO)) -lt 10485760 \
 		&& echo "size: under 10 MB OK"
 
