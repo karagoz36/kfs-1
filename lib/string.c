@@ -1,11 +1,11 @@
 /*
-** string.c — Kernel library fonksiyonlarinin implementasyonu.
-** Hepsi sade ve bagimsiz: hicbir dis fonksiyon cagrilmaz.
+** string.c — implementation of the kernel library functions.
+** All of them are self-contained: no external function is called.
 */
 
 #include "string.h"
 
-/* String'in sonundaki '\0' haric karakter sayisini dondurur. */
+/* Returns the number of characters before the terminating '\0'. */
 size_t k_strlen(const char *s)
 {
 	size_t len = 0;
@@ -15,7 +15,8 @@ size_t k_strlen(const char *s)
 	return (len);
 }
 
-/* Iki string'i karsilastirir: esitse 0, degilse ilk farkli byte'in farki. */
+/* Compares two strings: 0 when equal, otherwise the difference of the first
+** differing byte. */
 int k_strcmp(const char *a, const char *b)
 {
 	while (*a != '\0' && *a == *b)
@@ -26,18 +27,7 @@ int k_strcmp(const char *a, const char *b)
 	return ((int)(uint8_t)*a - (int)(uint8_t)*b);
 }
 
-/* Bellek blogunu tek bir byte degeriyle doldurur (buffer temizlemede kullanilir). */
-void *k_memset(void *dst, uint8_t value, size_t n)
-{
-	uint8_t *p = (uint8_t *)dst;
-	size_t   i = 0;
-
-	while (i < n)
-		p[i++] = value;
-	return (dst);
-}
-
-/* Kaynaktan hedefe n byte kopyalar (bloklarin cakismadigi varsayilir). */
+/* Copies n bytes from src to dst (the blocks are assumed not to overlap). */
 void *k_memcpy(void *dst, const void *src, size_t n)
 {
 	uint8_t       *d = (uint8_t *)dst;

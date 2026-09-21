@@ -1,6 +1,6 @@
 /*
-** string.h — Mini kernel library: standart libc olmadigi icin
-** ihtiyacimiz olan birkac fonksiyonu kendimiz yaziyoruz.
+** string.h — minimal kernel library: there is no libc, so the few functions
+** the kernel needs are written here.
 */
 
 #ifndef STRING_H
@@ -10,7 +10,6 @@
 
 size_t  k_strlen(const char *s);
 int     k_strcmp(const char *a, const char *b);
-void   *k_memset(void *dst, uint8_t value, size_t n);
 void   *k_memcpy(void *dst, const void *src, size_t n);
 
 #endif
