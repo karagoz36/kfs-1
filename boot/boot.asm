@@ -1,21 +1,22 @@
-; boot.asm — Kernel'in assembly giris noktasi (NASM, 32-bit).
+; boot.asm — the kernel's assembly entry point (NASM, 32-bit).
 ;
-; Iki isi vardir:
-;   1) GRUB'in kernel'imizi taniyabilmesi icin Multiboot header koymak,
-;   2) C kodunun calisabilmesi icin bir stack hazirlayip kernel_main'i cagirmak.
+; It does two things:
+;   1) place a multiboot header so GRUB recognises our kernel,
+;   2) set up a stack and call kernel_main so the C code can run.
 
 bits 32
 
-; --- Multiboot v1 header sabitleri ---
-; GRUB, dosyanin ilk 8 KB'inda 4 byte hizali olarak MAGIC degerini arar.
-MB_ALIGN    equ 1 << 0                   ; modulleri page boundary'ye hizala
-MB_MEMINFO  equ 1 << 1                   ; bellek haritasini bize ver
-MB_FLAGS    equ MB_ALIGN | MB_MEMINFO
-MB_MAGIC    equ 0x1BADB002               ; multiboot 1 imzasi
-MB_CHECKSUM equ -(MB_MAGIC + MB_FLAGS)   ; magic + flags + checksum = 0 olmali
+; --- Multiboot v1 header constants ---
+; GRUB scans the first 8 KB of the file, 4-byte aligned, for MAGIC.
+; FLAGS = 0: we ask GRUB for nothing extra (no modules are loaded and the
+; multiboot info struct is never read). Loading the kernel from its ELF
+; headers is all we need.
+MB_MAGIC    equ 0x1BADB002               ; multiboot 1 signature
+MB_FLAGS    equ 0
+MB_CHECKSUM equ -(MB_MAGIC + MB_FLAGS)   ; magic + flags + checksum must be 0
 
-; Header'i kendi section'ina koyuyoruz; linker script bunu dosyanin
-; en basina yerlestirdigi icin GRUB header'i mutlaka bulur.
+; The header lives in its own section; the linker script places that section at
+; the very beginning of the file, so GRUB is guaranteed to find it.
 section .multiboot
 align 4
 	dd MB_MAGIC
@@ -23,10 +24,10 @@ align 4
 	dd MB_CHECKSUM
 
 ; --- Stack ---
-; Multiboot spec esp register'inin degerini garanti etmez, yani GRUB'dan
-; gelen stack'e guvenemeyiz. C kodu stack olmadan calisamayacagi icin
-; 16 KB'lik bir alani .bss'te ayiriyoruz (dosya boyutunu buyutmez).
-; x86 System V ABI stack'in 16 byte hizali olmasini ister.
+; The multiboot spec does not guarantee the value of esp, so the stack left by
+; GRUB cannot be trusted. C code cannot run without a stack, so we reserve
+; 16 KB in .bss (which does not grow the binary).
+; The x86 System V ABI requires the stack to be 16-byte aligned.
 section .bss
 align 16
 stack_bottom:
@@ -38,18 +39,18 @@ global _start
 extern kernel_main
 
 _start:
-	; Stack x86'da asagi dogru buyur, bu yuzden esp tepeyi gosterir.
+	; The stack grows downwards on x86, so esp points at the top.
 	mov esp, stack_top
 
-	; C tarafina gec. Bu cagri normal sartlarda geri donmez.
+	; Hand over to the C side. This call is not expected to return.
 	call kernel_main
 
-	; Yine de donerse: interrupt'lari kapat ve makineyi sonsuza kadar durdur.
+	; Should it return anyway: disable interrupts and halt forever.
 	cli
 .hang:
 	hlt
 	jmp .hang
 
-; Modern linker'lara "stack'in executable olmasina gerek yok" demek icin
-; konulan bos section; olmazsa ld uyari verir.
+; An empty section telling modern linkers that the stack need not be
+; executable; without it ld emits a warning.
 section .note.GNU-stack noalloc noexec nowrite progbits
