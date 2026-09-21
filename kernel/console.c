@@ -127,8 +127,8 @@ void console_clear(void)
 
 /*
 ** Tek karakter yazar. Ozel karakterler:
-**  '\n' -> yeni satir, '\r' -> satir basi,
-**  '\t' -> 4'un katina hizalama, '\b' -> silme (backspace).
+**  '\n' -> yeni satir, '\t' -> 4'un katina hizalama,
+**  '\b' -> silme (backspace).
 */
 void console_putchar(char c)
 {
@@ -136,8 +136,6 @@ void console_putchar(char c)
 
 	if (c == '\n')
 		newline(con);
-	else if (c == '\r')
-		con->col = 0;
 	else if (c == '\t')
 	{
 		size_t spaces = 4 - (con->col % 4);

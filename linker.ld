@@ -44,7 +44,4 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 	}
-
-	/* Kernel'in bellekte nerede bittigini gosteren sembol (ileride lazim olacak) */
-	kernel_end = .;
 }
