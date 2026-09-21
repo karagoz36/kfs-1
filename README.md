@@ -193,6 +193,20 @@ Link command: `ld -m elf_i386 -T linker.ld -nostdlib -o kernel.bin *.o`
 Sections are page-aligned so that code and data land in separate LOAD segments;
 without that the linker produces a single RWX segment and warns about it.
 
+### The chain
+
+```
+boot.asm ──nasm──┐
+                 ├──> .o files ──ld──> kernel.bin ──grub-mkrescue──> kfs.iso
+*.c ──────gcc────┘    (no addresses)    (addressed,      (+ GRUB, bootable)
+                                         multiboot)
+```
+
+Each stage feeds the next: the assembler and the compiler emit machine code
+with the addresses still missing, the linker resolves the symbols and fixes
+every address according to `linker.ld`, and `grub-mkrescue` wraps the result
+together with GRUB into a bootable medium.
+
 ### ISO
 
 `grub-mkrescue` takes the kernel and `grub.cfg` and produces a bootable ISO. To
