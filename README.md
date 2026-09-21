@@ -12,6 +12,8 @@ written from scratch, booted by GRUB and able to write on the screen.
 
 ## 1. Quick start
 
+### Linux (Fedora at school)
+
 ```bash
 sudo dnf install -y gcc nasm binutils make xorriso grub2-tools-extra grub2-pc-modules qemu-system-x86
 make          # produces kernel.bin + kfs.iso
@@ -21,6 +23,19 @@ make run      # boots it in QEMU  (for KVM: make run KVM=1)
 > `grub2-pc-modules` is required: without it `grub2-mkrescue` cannot produce an
 > ISO that boots through BIOS. The Makefile detects the `grub-*` / `grub2-*`
 > naming difference (`mkrescue`, `file`) itself.
+
+### macOS (development environment)
+
+macOS has no `gcc -m32`, no `ld -m elf_i386` and no `grub-mkrescue`, so the
+build runs inside a Linux container while QEMU runs natively:
+
+```bash
+brew install qemu
+make docker   # clean build inside Docker (linux/amd64) -> kfs.iso
+make run      # start it with the Mac's qemu-system-i386
+```
+
+`make docker-shell` opens a shell in the container for manual work.
 
 ---
 
@@ -67,6 +82,7 @@ Details:
 | `lib/string.c` | `k_strlen`, `k_strcmp`, `k_memcpy` |
 | `include/*.h` | Our own types (`types.h`), port I/O (`io.h`), interfaces |
 | `Makefile` | Two-language build + link + ISO + QEMU |
+| `Dockerfile` | The Linux build environment used on macOS |
 
 ---
 
@@ -210,6 +226,8 @@ and passes `--fonts= --locales= --themes= --compress=xz`.
 | `make run` | Boots it in QEMU (`KVM=1` for hardware acceleration) |
 | `make check` | Multiboot compliance + 10 MB limit |
 | `make clean` / `fclean` / `re` | Removes objects / the ISO, rebuilds from scratch |
+| `make docker` | Clean build inside a Linux container (macOS) |
+| `make docker-shell` | Opens a shell in the build container |
 
 ---
 
